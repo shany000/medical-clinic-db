@@ -1,0 +1,173 @@
+
+Table patients {
+  patient_id bigint [pk, increment]
+  last_name varchar(100) [not null]
+  first_name varchar(100) [not null]
+  middle_name varchar(100)
+  birth_date date [not null]
+  gender varchar(10)
+  snils varchar(11) [unique]
+  phone varchar(30)
+  email varchar(254)
+  address text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at timestamptz
+}
+
+Table specialties {
+  specialty_id bigint [pk, increment]
+  name varchar(150) [not null, unique]
+  description text
+  deleted_at timestamptz
+}
+
+Table doctors {
+  doctor_id bigint [pk, increment]
+  last_name varchar(100) [not null]
+  first_name varchar(100) [not null]
+  middle_name varchar(100)
+  phone varchar(30)
+  email varchar(254)
+  hire_date date [not null]
+  employment_status varchar(20) [not null, default: 'active']
+}
+
+Table doctor_specialties {
+  doctor_id bigint [not null]
+  specialty_id bigint [not null]
+  is_active boolean [not null, default: true]
+
+  indexes {
+    (doctor_id, specialty_id) [pk]
+  }
+}
+
+Table services {
+  service_id bigint [pk, increment]
+  name varchar(200) [not null, unique]
+  description text
+  price numeric(12,2) [not null]
+  duration_minutes int [not null]
+  is_active boolean [not null, default: true]
+}
+
+Table doctor_services {
+  doctor_id bigint [not null]
+  service_id bigint [not null]
+  is_active boolean [not null, default: true]
+
+  indexes {
+    (doctor_id, service_id) [pk]
+  }
+}
+
+Table doctor_schedule {
+  schedule_id bigint [pk, increment]
+  doctor_id bigint [not null]
+  starts_at timestamptz [not null]
+  ends_at timestamptz [not null]
+  note text
+  cancelled_at timestamptz
+  cancellation_reason text
+}
+
+Table appointments {
+  appointment_id bigint [pk, increment]
+  schedule_id bigint [not null]
+  patient_id bigint [not null]
+  starts_at timestamptz [not null]
+  ends_at timestamptz [not null]
+  status varchar(20) [not null, default: 'scheduled']
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  cancellation_reason text
+  cancelled_at timestamptz
+}
+
+Table appointment_services {
+  appointment_service_id bigint [pk, increment]
+  appointment_id bigint [not null]
+  service_id bigint [not null]
+  duration_minutes_at_booking int [not null]
+  price_at_booking numeric(12,2) [not null]
+}
+
+Table visits {
+  visit_id bigint [pk, increment]
+  appointment_id bigint [not null, unique]
+  complaints text
+  anamnesis text
+  examination_results text
+  conclusion text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table diagnoses {
+  diagnosis_id bigint [pk, increment]
+  name varchar(255) [not null, unique]
+  description text
+  deleted_at timestamptz
+}
+
+Table visit_diagnoses {
+  visit_id bigint [not null]
+  diagnosis_id bigint [not null]
+  note text
+
+  indexes {
+    (visit_id, diagnosis_id) [pk]
+  }
+}
+
+Table prescriptions {
+  prescription_id bigint [pk, increment]
+  visit_id bigint [not null]
+  medication_name varchar(255) [not null]
+  dosage varchar(100)
+  frequency varchar(255)
+  duration varchar(100)
+  instructions text
+}
+
+Table invoices {
+  invoice_id bigint [pk, increment]
+  visit_id bigint [not null, unique]
+  invoice_number varchar(50) [not null, unique]
+  issued_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  due_date date [not null]
+  total_amount numeric(12,2) [not null]
+}
+
+Table payments {
+  payment_id bigint [pk, increment]
+  invoice_id bigint [not null]
+  paid_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  amount numeric(12,2) [not null]
+  payment_method varchar(30) [not null]
+  transaction_number varchar(100) [unique]
+  note text
+}
+
+Ref: doctor_specialties.doctor_id > doctors.doctor_id [delete: restrict]
+Ref: doctor_specialties.specialty_id > specialties.specialty_id [delete: restrict]
+
+Ref: doctor_services.doctor_id > doctors.doctor_id [delete: restrict]
+Ref: doctor_services.service_id > services.service_id [delete: restrict]
+
+Ref: doctor_schedule.doctor_id > doctors.doctor_id [delete: restrict]
+
+Ref: appointments.schedule_id > doctor_schedule.schedule_id [delete: restrict]
+Ref: appointments.patient_id > patients.patient_id [delete: restrict]
+
+Ref: appointment_services.appointment_id > appointments.appointment_id [delete: restrict]
+Ref: appointment_services.service_id > services.service_id [delete: restrict]
+
+Ref: visits.appointment_id - appointments.appointment_id [delete: restrict]
+
+Ref: visit_diagnoses.visit_id > visits.visit_id [delete: restrict]
+Ref: visit_diagnoses.diagnosis_id > diagnoses.diagnosis_id [delete: restrict]
+
+Ref: prescriptions.visit_id > visits.visit_id [delete: restrict]
+
+Ref: invoices.visit_id - visits.visit_id [delete: restrict]
+
+Ref: payments.invoice_id > invoices.invoice_id [delete: restrict]
